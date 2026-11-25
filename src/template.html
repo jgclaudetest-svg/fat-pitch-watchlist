@@ -248,8 +248,8 @@ input[type=range]{width:100%;accent-color:var(--ink);height:28px;margin:0}
       <div id="whylist"></div>
     </section>
     <section class="panel" id="scout">
-      <header><h2 id="sc-head"></h2><p class="muted small">These companies are not researched. The page screens them with generic tests: a price at or below 20 times owner cash, debt under 3 years of cash, and sales not shrinking. One that shows up here is a lead to look into, and Claude can add it to the watchlist with tests that fit it.</p></header>
-      <div class="chips" id="sc-hits"></div>
+      <header><h2 id="sc-head"></h2><p class="muted small">A wider list, screened in three passes. <b>First:</b> is it cheap and solvent (at or below 20 times owner cash, debt under 3 years of cash, sales not shrinking)? <b>Second:</b> is the cheapness real, and has the stock actually fallen? <b>Third:</b> Claude researches whatever clears both, and you decide whether to promote it.</p></header>
+      <div id="sc-body" class="stack" style="gap:18px"></div>
       <div style="display:flex;gap:16px;flex-wrap:wrap"><button class="linkbtn" id="sc-toggle" type="button">Show the whole list</button><button class="linkbtn" id="sc-refresh" type="button" hidden>Refresh financials for this list (about 3 minutes)</button></div>
       <div id="sc-table" hidden></div>
     </section>
@@ -335,6 +335,17 @@ function extractJSON(payload,content){
   var i=text.indexOf('{'),j=text.lastIndexOf('}');if(i<0||j<=i)throw new Error('no json');
   return JSON.parse(text.slice(i,j+1));
 }
+function scoutScreen(c,e){
+  var F=e.F,ev=e.price*F.sh/1000-F.nc,w=c.w||[],p1y=w.length>20?e.price/w[0]-1:null,mc=p1y!=null&&F.g!=null?(1+p1y)/(1+F.g)-1:null;
+  var pass1=e.sized&&e.zone>=3&&e.h===0,near=e.sized&&!pass1&&e.h===0&&e.m>c.top&&e.m<=25;
+  var cp=F.op>0&&F.ocfs!=null?F.ocfs/F.op:null,evop=F.op>0?ev/F.op:null;
+  var checks=[
+   {id:'cash',label:'Cash is backed by profit',ok:cp!=null&&cp<=1.5,detail:cp==null?'It has no operating profit to compare with.':'Operating cash is '+cp.toFixed(1)+' times operating profit. The limit is 1.5.'},
+   {id:'second',label:'Cheap on a second measure',ok:evop!=null&&evop<=16,detail:evop==null?'It has no operating profit.':'It trades at '+evop.toFixed(1)+' times operating profit. The limit is 16.'},
+   {id:'fallen',label:'Actually knocked down',ok:(e.off!=null&&e.off<=-0.25)||(mc!=null&&mc<=-0.2),detail:(e.off==null?'':'It is '+Math.round(-e.off*100)+'% below its high')+(mc==null?'.':', and its multiple is '+(mc>=0?'up ':'down ')+Math.abs(Math.round(mc*100))+'% in a year.')+' It needs 25% below, or a multiple down 20%.'}];
+  var fails=checks.filter(function(x){return !x.ok;});
+  return {pass1:pass1,near:near,checks:checks,fails:fails,clear:pass1&&!fails.length,cyc:!!c.cyc};
+}
 /*END*/
 (function(){
   var DATA,FX,ALL=[],CO=[],SC=[],BY={};
@@ -415,10 +426,15 @@ function extractJSON(payload,content){
       rs.map(function(x){var e=x.r.e,c=x.r.c,rc=function(v){return v==null||v<=-9?'<td class="r num">n/a</td>':'<td class="r num '+(v<0?'neg':'pos')+'">'+pc(v,true)+' a year</td>';};
         return '<tr><td><a href="#'+c.t+'">'+esc(c.t)+'<span>'+esc(c.name)+'</span></a></td><td><span class="tag s-'+e.sig+'">'+esc(sigLabel(e))+'</span></td><td class="r num">'+esc(!e.sized?'Not sized':e.zone===3?'In range':e.zone===4?'Below range':Math.round(e.gap*100)+'% above')+'</td>'+rc(e.R&&e.R.bear)+rc(e.R&&e.R.base)+'<td><i class="dotk d-'+hcls(e.h)+'"></i> '+hname(e.h)+(e.loaded?' <span class="muted num">'+e.ok+'/'+e.loaded+'</span>':'')+'</td><td class="r num">'+pc(e.off)+'</td><td class="r num">'+pc(e.F.g,true)+'</td><td class="r num">'+(x.beta==null?'n/a':x.beta.toFixed(2))+'</td></tr>';}).join('')+'</tbody></table></div>';
   }
+  function scoutRows(){return rows(SC).map(function(r){r.s=scoutScreen(r.c,r.e);return r;});}
   function renderScout(){
-    var R=rows(SC),hits=R.filter(function(r){return r.e.sig==='pitch';}).sort(byGap);
-    $('sc-head').textContent='Scout: '+hits.length+' of '+SC.length+' other companies pass a generic screen';
-    $('sc-hits').innerHTML=hits.length?hits.map(function(r){return '<a class="chip s-pitch" href="#'+r.c.t+'">'+esc(r.c.t)+'<small>'+fm(r.e.m)+'</small></a>';}).join(''):'<span class="muted small">None right now.</span>';
+    var R=scoutRows(),clear=R.filter(function(r){return r.s.clear;}).sort(byGap),stopped=R.filter(function(r){return r.s.pass1&&!r.s.clear;}).sort(byGap),near=R.filter(function(r){return r.s.near;}).sort(function(a,b){return a.e.m-b.e.m;});
+    $('sc-head').textContent='Scout: '+clear.length+' ready for research, '+stopped.length+' stopped at the second pass';
+    function row(r,tag,cls,text){return '<div class="whyrow"><a class="tk" href="#'+r.c.t+'">'+esc(r.c.t)+'</a><span><span class="tag '+cls+'">'+tag+'</span></span><p>'+text+'</p></div>';}
+    var h='<div><span class="label">Cleared both passes</span>'+(clear.length?clear.map(function(r){var x=r.c.rs||{};return row(r,x.verdict?(VN[x.verdict]||'Researched'):'Ready for research',x.verdict?'v-'+esc(x.verdict):'s-pitch',esc(x.one_line||'Cheap on two measures, backed by profit, and knocked down. Ask Claude to research it.')+(r.s.cyc?' <span class="muted">Cyclical: its profits may be at a peak.</span>':''));}).join(''):'<p class="muted small" style="padding-top:8px">None right now.</p>')+'</div>';
+    h+='<div><span class="label">Passed the first, stopped at the second</span>'+(stopped.length?stopped.map(function(r){return row(r,'Stopped','s-wait','<b>'+esc(r.c.name)+'.</b> '+r.s.fails.map(function(f){return esc(f.label)+': no. '+esc(f.detail);}).join(' '));}).join(''):'<p class="muted small" style="padding-top:8px">None right now.</p>')+'</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:8px"><span class="label">Approaching the first pass (20 to 25 times owner cash)</span><div class="chips">'+(near.length?near.map(function(r){return '<a class="chip s-wait" href="#'+r.c.t+'">'+esc(r.c.t)+'<small>'+fm(r.e.m)+(r.e.off!=null?', '+Math.round(-r.e.off*100)+'% below high':'')+'</small></a>';}).join(''):'<span class="muted small">None right now.</span>')+'</div></div>';
+    $('sc-body').innerHTML=h;
     $('sc-toggle').textContent=scOpen?'Hide the whole list':'Show the whole list';$('sc-table').hidden=!scOpen;if(scOpen)$('sc-table').innerHTML=tableHTML(R);
   }
   document.addEventListener('click',function(ev){
@@ -431,10 +447,10 @@ function extractJSON(payload,content){
 
   /* ---------- what changed since the last visit ---------- */
   function checkChanges(){
-    var now={};rows(CO).forEach(function(r){now[r.c.t]=r.e.sig;});rows(SC).forEach(function(r){if(r.e.sig==='pitch')now[r.c.t]='scout';});
+    var now={};rows(CO).forEach(function(r){now[r.c.t]=r.e.sig;});rows(SC).forEach(function(r){if(scoutScreen(r.c,r.e).clear)now[r.c.t]='scout';});
     var S=ST.seen;
-    if(S&&S.m){var diff=[];Object.keys(now).forEach(function(t){var a=S.m[t],b=now[t];if(a===b)return;if(b==='scout')diff.push(t+' now passes the scout screen');else if(a&&a!=='scout'&&SIG[a]&&SIG[b])diff.push(t+': '+SIG[a].label+' to '+SIG[b].label);});
-      Object.keys(S.m).forEach(function(t){if(S.m[t]==='scout'&&!now[t])diff.push(t+' no longer passes the scout screen');});
+    if(S&&S.m){var diff=[];Object.keys(now).forEach(function(t){var a=S.m[t],b=now[t];if(a===b)return;if(b==='scout')diff.push(t+' now clears both scout passes');else if(a&&a!=='scout'&&SIG[a]&&SIG[b])diff.push(t+': '+SIG[a].label+' to '+SIG[b].label);});
+      Object.keys(S.m).forEach(function(t){if(S.m[t]==='scout'&&!now[t])diff.push(t+' no longer clears both scout passes');});
       if(diff.length){S.diff=diff.slice(0,12);S.diffAt=Date.now();S.from=S.at;}}
     ST.seen={m:now,at:Date.now(),diff:S&&S.diff,diffAt:S&&S.diffAt,from:S&&S.from};save();
     var show=ST.seen.diff&&ST.seen.diff.length&&Date.now()-ST.seen.diffAt<48*3600*1000;
@@ -451,7 +467,7 @@ function extractJSON(payload,content){
     var set=c.scout?SC:CO,i=set.indexOf(c),prev=set[(i+set.length-1)%set.length],next=set[(i+1)%set.length],e0=E(c);
     var h='<a class="back" href="#">&larr; All companies</a>'+
      '<section class="dhead"><div class="dtitle"><h1>'+esc(c.name)+'</h1><span class="tk">'+esc(c.t)+' &middot; '+esc(c.scout?'Scout list':c.group)+'</span></div><div class="pills"><span class="pill" id="d-sig"></span><span class="pill plain" id="d-zone"></span><span class="pill" id="d-health"></span><span class="pill plain num" id="d-off"></span></div><div class="plan"><p id="d-plan"></p></div></section>';
-    h+=c.scout?'<div class="panel"><p><b>Not researched.</b> This company is on the wider scout list, so it uses generic tests and a generic range. If it looks interesting, ask Claude to add it to the watchlist with a range and tests that fit it.</p></div>':
+    h+=c.scout?scoutPanel(c,e0):
      '<div class="three"><div><span class="label">Why it is here</span><p>'+esc(c.why)+'</p></div><div><span class="label">The catch</span><p>'+esc(c.catch)+'</p></div><div><span class="label">What would make a fall fair</span><p>'+esc(c.flag)+'</p></div></div>';
     h+='<div class="grid"><section class="panel"><header><span class="step">Price</span><h2>Is the price a bargain?</h2><p class="muted small"><b>'+esc(MEASURE[c.kind]+(c.measureNote?' '+c.measureNote:''))+'.</b> '+esc(MEXPLAIN[c.kind])+'</p></header>';
     if(e0.sized){
@@ -502,15 +518,21 @@ function extractJSON(payload,content){
     return '<section class="panel"><header><span class="step">Research</span><h2>Why it is cheap, from outside sources</h2><div class="pills"><span class="vtag v-'+esc(x.verdict)+'">The fall: '+(VN[x.verdict]||esc(x.verdict)).toLowerCase()+'</span><span class="pill plain">Confidence: '+esc(x.confidence||'n/a')+'</span><span class="pill plain">Researched '+esc(niceDate(x.asof||DATA.asof))+'</span></div><p>'+esc(x.one_line||'')+'</p></header>'+
       '<div class="three" style="gap:20px"><div class="rsec" style="padding:0;background:none"><span class="label">Why it fell</span><ul>'+items(x.why_fell,'reason')+'</ul></div><div class="rsec" style="padding:0;background:none"><span class="label">The case that the fall is unfair</span><ul>'+items(x.for_unfair,'point')+'</ul></div><div class="rsec" style="padding:0;background:none"><span class="label">The case that it is fair</span><ul>'+items(x.for_fair,'point')+'</ul></div></div>'+
       '<div class="kv">'+[['What the market fears',x.what_market_fears],['What would prove that wrong',x.what_would_prove_it_wrong],['Next date to watch',x.next_date_to_watch],['Not found',x.not_found]].filter(function(r){return r[1];}).map(function(r){return '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><span class="muted">'+esc(r[0])+'</span><span>'+esc(r[1])+'</span></div>';}).join('')+'</div><p class="small muted">Gathered by Claude from company reports and major news outlets. It is a reading of sources, not a forecast.</p></section>';}
+  function scoutPanel(c,e){var s=scoutScreen(c,e),mark=function(ok){return '<span class="pill '+(ok?'healthy':'broken')+'">'+(ok?'Yes':'No')+'</span>';};
+    var p1='<div class="test" style="grid-template-areas:\'n p\'"><div class="tname"><b>First pass: cheap and solvent</b><span>At or below 20 times owner cash, with the generic business tests passing. It is at '+(e.sized?fm(e.m):'n/a')+'.</span></div>'+mark(s.pass1)+'</div>';
+    var p2=s.checks.map(function(k){return '<div class="test" style="grid-template-areas:\'n p\'"><div class="tname"><b>'+esc(k.label)+'</b><span>'+esc(k.detail)+'</span></div>'+mark(k.ok)+'</div>';}).join('');
+    return '<section class="panel"><header><span class="step">Scout screen</span><h2>'+(s.clear?'Cleared both passes. Ready for research.':s.pass1?'Passed the first pass, stopped at the second.':s.near?'Approaching the first pass.':'Has not passed the first pass.')+'</h2><p class="muted small">This company is on the wider scout list, so it uses a generic range and generic tests. Promoting it to the watchlist gives it a measure, range and tests that fit it.'+(s.cyc?' <b>Cyclical:</b> its profits swing with a commodity or an investment cycle, so today\'s figures may be a peak.':'')+'</p></header><div class="tests">'+p1+p2+'</div></section>';}
   function kvHTML(a){return a.map(function(r){return '<div><span>'+esc(r[0])+'</span><span class="num">'+esc(r[1])+'</span></div>';}).join('');}
   function paint(keepInput){
     var c=cur;if(!c)return;var e=E(c,what[c.t]),F=e.F,shown=view==null?(e.h<0?1:e.h):view;
     $('d-sig').className='pill s-'+e.sig;$('d-sig').textContent=sigLabel(e);
+    var ss=c.scout?scoutScreen(c,e):null;
+    if(ss){$('d-sig').className='pill '+(ss.clear?'s-pitch':'s-wait');$('d-sig').textContent=ss.clear?'Scout: ready for research':ss.pass1?'Scout: stopped at the second pass':ss.near?'Scout: approaching':'Scout list';}
     $('d-health').className='pill '+hcls(e.h);$('d-health').textContent='Business: '+hname(e.h).toLowerCase()+(e.loaded?' · '+e.ok+' of '+e.loaded:'');
     $('d-off').textContent=e.off==null?'':(Math.abs(e.off)<0.005?'At its 52-week high':Math.round(-e.off*100)+'% below its 52-week high');
     if(e.sized){
       $('d-zone').innerHTML='<i class="sw" style="background:var(--z'+e.zone+')"></i>'+ZN[e.zone]+' · '+fm(e.m);
-      $('d-plan').textContent=PLAN[e.zone][e.h<0?1:e.h];
+      $('d-plan').textContent=ss?(ss.clear?'It cleared both scout passes. Next step: have Claude research it before any decision.':ss.pass1?'Not a candidate yet. It is cheap, but it did not clear the second pass: '+ss.fails.map(function(f){return f.label.toLowerCase();}).join(', ')+'.':ss.near?'Not a candidate yet. It is close to the first pass.':'Not a candidate. It has not passed the first scout pass.'):PLAN[e.zone][e.h<0?1:e.h];
       if(!keepInput)$('d-price').value=(+e.price).toFixed(2);$('d-slider').value=e.price;$('d-mult').textContent=fm(e.m);
       $('d-reset').hidden=Math.abs(e.price-c.price)<0.005;
       var top=Math.max(c.fair*1.5,e.m*1.15),bot=c.bot*0.55,bnd=[top,c.fair,c.disc,c.top,c.bot,bot],L='<div class="lbar">';
