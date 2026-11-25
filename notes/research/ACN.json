@@ -1,0 +1,99 @@
+{
+ "t": "ACN",
+ "asof": "2026-11-24",
+ "verdict": "mixed",
+ "confidence": "low",
+ "one_line": "Results beat and bookings are record, but guidance is thin, prices fell in the last quarter, and peers are cutting forecasts. The fall is partly fair.",
+ "why_fell": [
+  {
+   "reason": "Fear that AI cuts the work and price of consulting",
+   "evidence": "Trade press ties the sell-off to AI disruption worries across the sector. Systems integration and app development are nearly half of sales.",
+   "source": "Trefis",
+   "url": "https://www.trefis.com/articles/591415/accenture-stock-6-6-ai-disruption-fears-spark-sector-wide-selloff/2026-02-24",
+   "date": "2026-02",
+   "read": "summary"
+  },
+  {
+   "reason": "Thin fiscal 2027 outlook",
+   "evidence": "Guidance is 3-6% growth in local currency, slightly below some estimates. First-quarter sales guided to $18.95-19.60 billion, up 2-6%.",
+   "source": "Accenture 8-K",
+   "url": "https://www.sec.gov/Archives/edgar/data/0001467373/000146737326000037/q4fy26earnings8-kexhibit.htm",
+   "date": "2026-10",
+   "read": "page"
+  },
+  {
+   "reason": "Prices fell in the latest quarter",
+   "evidence": "Management said pricing was stable for the year but lower in many areas in the fourth quarter, and that AI lets it pass on more savings.",
+   "source": "Trefis call summary",
+   "url": "https://www.trefis.com/articles/617963/what-would-it-take-for-ai-price-cuts-to-break-accenture-stock/2026-10-08",
+   "date": "2026-10",
+   "read": "page"
+  },
+  {
+   "reason": "Peers cutting forecasts",
+   "evidence": "Infosys cut its year growth forecast to 1-2%. Cognizant trimmed its range. TCS said it saw deflation.",
+   "source": "Analytics India Magazine",
+   "url": "https://analyticsindiamag.com/ai-news/infosys-ai-revenue-rises-29-in-q2-fy27-growth-guidance-cut",
+   "date": "2026-10",
+   "read": "page"
+  }
+ ],
+ "for_unfair": [
+  {
+   "point": "Fiscal 2026 sales were $74.2 billion, up 5% in local currency, beating the 3-4% guide. Fourth quarter grew 7%, above the top of guidance.",
+   "source": "Accenture 8-K",
+   "url": "https://www.sec.gov/Archives/edgar/data/0001467373/000146737326000037/q4fy26earnings8-kexhibit.htm",
+   "date": "2026-10",
+   "read": "page"
+  },
+  {
+   "point": "Bookings were $22.2 billion in the quarter (1.2 times sales) and $84.5 billion for the year. Managed services hit a record $12.8 billion.",
+   "source": "Accenture 8-K / Trefis",
+   "url": "https://www.sec.gov/Archives/edgar/data/0001467373/000146737326000037/q4fy26earnings8-kexhibit.htm",
+   "date": "2026-10",
+   "read": "page"
+  },
+  {
+   "point": "Free cash flow was $11.6 billion, margin rose to 15.8% adjusted, and at least $9.5 billion goes back to shareholders in fiscal 2027.",
+   "source": "Accenture 8-K",
+   "url": "https://www.sec.gov/Archives/edgar/data/0001467373/000146737326000037/q4fy26earnings8-kexhibit.htm",
+   "date": "2026-10",
+   "read": "page"
+  }
+ ],
+ "for_fair": [
+  {
+   "point": "Full-year bookings grew only 3% in local currency, a slow pace for the year. Peers are weaker still, so the whole group is slowing.",
+   "source": "Accenture 8-K",
+   "url": "https://www.sec.gov/Archives/edgar/data/0001467373/000146737326000037/q4fy26earnings8-kexhibit.htm",
+   "date": "2026-10",
+   "read": "page"
+  },
+  {
+   "point": "Everest Group estimates AI has lifted price deflation in IT services from about 2% to 5%. TCS called it degrowth. Infosys cut its forecast to 1-2%.",
+   "source": "Analytics India Magazine / The Register",
+   "url": "https://analyticsindiamag.com/ai-news/infosys-ai-revenue-rises-29-in-q2-fy27-growth-guidance-cut",
+   "date": "2026-10",
+   "read": "summary"
+  },
+  {
+   "point": "Management said hiring will slow in fiscal 2027, partly due to AI. Guidance already assumes intense competition, leaving little cushion.",
+   "source": "Trefis call summary",
+   "url": "https://www.trefis.com/articles/617963/what-would-it-take-for-ai-price-cuts-to-break-accenture-stock/2026-10-08",
+   "date": "2026-10",
+   "read": "page"
+  }
+ ],
+ "what_market_fears": "AI lets clients buy the same work for less, so prices and sales shrink faster than new AI work fills the gap.",
+ "what_would_prove_it_wrong": "Two quarters of falling sales with falling prices would show it is real. Steady 3-6% growth with stable margins would show the fear is overdone.",
+ "next_date_to_watch": "Fiscal Q1 2027 results, expected December 2026. Watch sales against the $18.95 billion floor.",
+ "flag": {
+  "status": "watch",
+  "note": "Sales are still growing 7%, but prices fell in many areas in the latest quarter, an early sign of the flagged risk.",
+  "source": "Trefis call summary",
+  "url": "https://www.trefis.com/articles/617963/what-would-it-take-for-ai-price-cuts-to-break-accenture-stock/2026-10-08",
+  "date": "2026-10",
+  "read": "page"
+ },
+ "not_found": "Headcount change for the year not found in a filing (about 814,000 at year-end). Search results on a June 2026 price near $128 conflict with the briefed $232 price and were not used. IBM Q3 2026 consulting figures and TCS October results not confirmed. No direct client-pricing evidence beyond management comments."
+}
